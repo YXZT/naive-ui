@@ -1,10 +1,6 @@
 import { isBrowser } from '../../_utils'
-import type {
-  FileAndEntry,
-  FileInfo,
-  SettledFileInfo,
-  ShouldUseThumbnailUrl
-} from './interface'
+import type { FileAndEntry, ShouldUseThumbnailUrl } from './interface'
+import type { UploadFileInfo, UploadSettledFileInfo } from './public-types'
 
 export const isImageFileType = (type: string): boolean =>
   type.includes('image/')
@@ -65,58 +61,41 @@ export async function getFilesFromEntries (
   directory: boolean
 ): Promise<FileAndEntry[]> {
   const fileAndEntries: FileAndEntry[] = []
-  let _resolve: (fileAndEntries: FileAndEntry[]) => void
-  let requestCallbackCount = 0
-  function lock (): void {
-    requestCallbackCount++
-  }
-  function unlock (): void {
-    requestCallbackCount--
-    if (!requestCallbackCount) {
-      _resolve(fileAndEntries)
-    }
-  }
-  function _getFilesFromEntries (
+
+  async function _getFilesFromEntries (
     entries: readonly FileSystemEntry[] | Array<FileSystemEntry | null>
-  ): void {
-    entries.forEach((entry) => {
-      if (!entry) return
-      lock()
+  ): Promise<void> {
+    for (const entry of entries) {
+      if (!entry) continue
       if (directory && isFileSystemDirectoryEntry(entry)) {
         const directoryReader = entry.createReader()
-        lock()
-        directoryReader.readEntries(
-          (entries) => {
-            _getFilesFromEntries(entries)
-            unlock()
-          },
-          () => {
-            unlock()
-          }
-        )
+        try {
+          const entries = await new Promise<readonly FileSystemEntry[]>(
+            (resolve, reject) => {
+              directoryReader.readEntries(resolve, reject)
+            }
+          )
+          await _getFilesFromEntries(entries)
+        } catch {}
       } else if (isFileSystemFileEntry(entry)) {
-        lock()
-        entry.file(
-          (file) => {
-            fileAndEntries.push({ file, entry, source: 'dnd' })
-            unlock()
-          },
-          () => {
-            unlock()
-          }
-        )
+        try {
+          const file = await new Promise<File>((resolve, reject) => {
+            entry.file(resolve, reject)
+          })
+          fileAndEntries.push({ file, entry, source: 'dnd' })
+        } catch {}
       }
-      unlock()
-    })
+    }
   }
-  await new Promise<FileAndEntry[]>((resolve) => {
-    _resolve = resolve
-    _getFilesFromEntries(entries)
-  })
+
+  await _getFilesFromEntries(entries)
+
   return fileAndEntries
 }
 
-export function createSettledFileInfo (fileInfo: FileInfo): SettledFileInfo {
+export function createSettledFileInfo (
+  fileInfo: UploadFileInfo
+): UploadSettledFileInfo {
   const {
     id,
     name,
@@ -182,19 +161,4 @@ export function matchType (
     }
     return false
   })
-}
-
-export const download = (
-  url: string | null,
-  name: string | undefined
-): void => {
-  if (!url) return
-  const a = document.createElement('a')
-  a.href = url
-  if (name !== undefined) {
-    a.download = name
-  }
-  document.body.appendChild(a)
-  a.click()
-  document.body.removeChild(a)
 }

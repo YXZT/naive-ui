@@ -13,6 +13,7 @@ The element to collect and validate data.
 ```demo
 inline.vue
 custom-rule.vue
+abnormal-warning.vue
 custom-validation.vue
 i18n.vue
 top.vue
@@ -24,6 +25,7 @@ show-label.vue
 partially-apply-rules.vue
 custom-messages.vue
 dynamic.vue
+feedback-style.vue
 ```
 
 ## API
@@ -72,6 +74,8 @@ dynamic.vue
 | Name | Type | Default | Description | Version |
 | --- | --- | --- | --- | --- |
 | feedback | `string` | `undefined` | The feedback message of the form item. If set, it will replace any result of rule-based validation. |  |
+| feedback-class | `string` | `undefined` | Feedback check vertical display positioning | 2.38.2 |
+| feedback-style | `string \| object` | `undefined` | Feedback check horizontal display positioning | 2.38.2 |
 | first | `boolean` | `false` | Whether to only show the first validation error message. |  |
 | ignore-path-change | `boolean` | `false` | Usually, changing `path` will cause a re-render and naive-ui will clear the validation result. Setting `ignore-path-change` to `true` will disable that behavior. |  |
 | label | `string` | `undefined` | Label. |  |
@@ -101,17 +105,17 @@ Accept all props from FormItem & [GridItem](grid#GridItem-Props)
   By default, validation will use all rules regardless of the triggers of the rules.
 </n-alert>
 
-| Name | Type | Description |
-| --- | --- | --- |
-| validate | `(validateCallback?: (errors?: Array<FormValidationError>) => void, shouldRuleBeApplied?: FormItemRule => boolean) => Promise<void>` | Validate the form. The rejection value type of returned promise is `Array<FormValidationError>`. |
-| restoreValidation | `() => void` | Restore validate. |
+| Name | Type | Description | Version |
+| --- | --- | --- | --- |
+| validate | `(validateCallback?: (errors: Array<FormValidationError> \| undefined, extra: { warnings: Array<FormValidationError> \| undefined }) => void, shouldRuleBeApplied?: FormItemRule => boolean) => Promise<{ warnings: Array<FormValidationError> \| undefined }>` | Validate the form. The rejection value type of returned promise is `Array<FormValidationError>`. | `warnings` `2.37.1` |
+| restoreValidation | `() => void` | Restore validate. |  |
 
 ### FormItem, FormItemGi Methods
 
-| Name | Type | Description |
-| --- | --- | --- |
-| validate | `(options: { trigger?: string, callback?: (errors?: Array<FormValidationError>) => void, shouldRuleBeApplied?: FormItemRule => boolean, options?: AsyncValidatorOptions }) => Promise<void>` | Validate the form item. The rejection value type of returned promise is `Array<FormValidationError>`. If trigger is not set, all rules of the item will be applied. `shouldRuleBeApplied` can filter rules after they are filtered by the trigger. |
-| restoreValidation | `() => void` | Restore validate. |
+| Name | Type | Description | Version |
+| --- | --- | --- | --- |
+| validate | `(options: { trigger?: string, callback?: (errors: FormValidationError \| undefined, extra: { warnings: FormValidationError \| undefined }) => void, shouldRuleBeApplied?: FormItemRule => boolean, options?: AsyncValidatorOptions }) => Promise<{ warnings: FormValidationError \| undefined }>` | Validate the form item. The rejection value type of returned promise is `FormValidationError`. If trigger is not set, all rules of the item will be applied. `shouldRuleBeApplied` can filter rules after they are filtered by the trigger. | `warnings` `2.37.1` |
+| restoreValidation | `() => void` | Restore validate. |  |
 
 To find out more about AsyncValidatorOptions, see <n-a href="https://github.com/yiminghe/async-validator" target="_blank">async-validator</n-a>.
 

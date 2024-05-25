@@ -109,8 +109,7 @@ export default defineComponent({
     })
 
     watchEffect(() => {
-      void props.src
-      void props.imgProps?.src
+      void (props.src || props.imgProps?.src)
       showErrorRef.value = false
     })
 
@@ -207,9 +206,11 @@ export default defineComponent({
             ref="previewInstRef"
             showToolbar={this.showToolbar}
             showToolbarTooltip={this.showToolbarTooltip}
+            renderToolbar={this.renderToolbar}
           >
             {{
-              default: () => imgNode
+              default: () => imgNode,
+              toolbar: () => this.$slots.toolbar?.()
             }}
           </NImagePreview>
         )}

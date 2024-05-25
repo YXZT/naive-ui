@@ -33,12 +33,15 @@ export const submenuProps = {
     type: Object as PropType<TmNode>,
     required: true
   },
-  disabled: {
-    type: Boolean,
-    default: false
-  },
+  disabled: Boolean,
   icon: Function as PropType<() => VNodeChild>,
-  onClick: Function as PropType<() => void>
+  onClick: Function as PropType<() => void>,
+  domId: String,
+  virtualChildActive: {
+    type: Boolean,
+    default: undefined
+  },
+  isEllipsisPlaceholder: Boolean
 } as const
 
 export const NSubmenu = defineComponent({
@@ -91,7 +94,10 @@ export const NSubmenu = defineComponent({
       mergedDisabled: mergedDisabledRef,
       mergedValue: NMenu.mergedValueRef,
       childActive: useMemo(() => {
-        return NMenu.activePathRef.value.includes(props.internalKey)
+        return (
+          props.virtualChildActive ??
+          NMenu.activePathRef.value.includes(props.internalKey)
+        )
       }),
       collapsed: computed(() => {
         if (menuProps.mode === 'horizontal') return false
@@ -131,7 +137,9 @@ export const NSubmenu = defineComponent({
         dropdownShow,
         iconMarginRight,
         tmNode,
-        mergedClsPrefix
+        mergedClsPrefix,
+        isEllipsisPlaceholder,
+        extra
       } = this
       const attrs = nodeProps?.(tmNode.rawNode)
       return (
@@ -149,13 +157,14 @@ export const NSubmenu = defineComponent({
             maxIconSize={maxIconSize}
             activeIconSize={activeIconSize}
             title={title}
-            extra={this.extra}
+            extra={extra}
             showArrow={!isHorizontal}
             childActive={childActive}
             clsPrefix={mergedClsPrefix}
             icon={icon}
             hover={dropdownShow}
             onClick={handleClick}
+            isEllipsisPlaceholder={isEllipsisPlaceholder}
           />
         </div>
       )
@@ -204,8 +213,9 @@ export const NSubmenu = defineComponent({
           default: () => (
             <div
               class={`${mergedClsPrefix}-submenu`}
-              role="menuitem"
+              role="menu"
               aria-expanded={!this.collapsed}
+              id={this.domId}
             >
               {createSubmenuItem()}
               {this.isHorizontal ? null : createSubmenuChildren()}
@@ -216,8 +226,9 @@ export const NSubmenu = defineComponent({
     ) : (
       <div
         class={`${mergedClsPrefix}-submenu`}
-        role="menuitem"
+        role="menu"
         aria-expanded={!this.collapsed}
+        id={this.domId}
       >
         {createSubmenuItem()}
         {createSubmenuChildren()}

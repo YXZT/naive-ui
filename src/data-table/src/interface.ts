@@ -214,7 +214,7 @@ export type TmNode = TreeNode<InternalRowData>
 // for compat may add null
 export type SortOrder = 'ascend' | 'descend' | false
 
-export type Ellipsis = boolean | (EllipsisProps & { style?: CSSProperties })
+export type Ellipsis = boolean | EllipsisProps
 
 export interface CommonColumnInfo<T = InternalRowData> {
   fixed?: 'left' | 'right'
@@ -225,6 +225,7 @@ export interface CommonColumnInfo<T = InternalRowData> {
   align?: 'left' | 'center' | 'right'
   titleAlign?: 'left' | 'center' | 'right'
   ellipsis?: Ellipsis
+  ellipsisComponent?: 'ellipsis' | 'performant-ellipsis'
   cellProps?: (rowData: T, rowIndex: number) => HTMLAttributes
 }
 
@@ -521,6 +522,7 @@ export interface DataTableInst {
   page: (page: number) => void
   sort: (columnKey: ColumnKey, order: SortOrder) => void
   scrollTo: ScrollTo
+  downloadCsv: (options?: CsvOptionsType) => void
   /** @deprecated it but just leave it here, it does no harm */
   clearFilter: () => void
 }
@@ -542,3 +544,8 @@ export type DataTableSelectionOption = 'all' | 'none'
 
 export type DataTableProps = ExtractPublicPropTypes<typeof dataTableProps>
 export type DataTableSetupProps = ExtractPropTypes<typeof dataTableProps>
+
+export interface CsvOptionsType {
+  fileName?: string
+  keepOriginalData?: boolean
+}

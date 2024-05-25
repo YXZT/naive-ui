@@ -23,15 +23,9 @@ import { uploadLight, type UploadTheme } from '../styles'
 import { uploadDraggerKey } from './UploadDragger'
 import type {
   XhrHandlers,
-  FileInfo,
   DoChange,
-  UploadInst,
   UploadInternalInst,
   FuncOrRecordOrUndef,
-  OnFinish,
-  OnRemove,
-  OnDownload,
-  OnChange,
   OnUpdateFileList,
   OnBeforeUpload,
   ListType,
@@ -39,7 +33,6 @@ import type {
   CreateThumbnailUrl,
   CustomRequest,
   OnError,
-  SettledFileInfo,
   FileAndEntry,
   ShouldUseThumbnailUrl,
   RenderIcon
@@ -54,6 +47,15 @@ import {
 } from './utils'
 import NUploadTrigger from './UploadTrigger'
 import NUploadFileList from './UploadFileList'
+import type {
+  UploadFileInfo,
+  UploadInst,
+  UploadOnChange,
+  UploadOnDownload,
+  UploadOnFinish,
+  UploadOnRemove,
+  UploadSettledFileInfo
+} from './public-types'
 import style from './styles/index.cssr'
 
 /**
@@ -61,13 +63,13 @@ import style from './styles/index.cssr'
  */
 function createXhrHandlers (
   inst: UploadInternalInst,
-  file: SettledFileInfo,
+  file: UploadSettledFileInfo,
   xhr: XMLHttpRequest
 ): XhrHandlers {
   const { doChange, xhrMap } = inst
   let percentage = 0
   function handleXHRError (e: ProgressEvent<EventTarget>): void {
-    let fileAfterChange: SettledFileInfo = Object.assign({}, file, {
+    let fileAfterChange: UploadSettledFileInfo = Object.assign({}, file, {
       status: 'error',
       percentage
     })
@@ -90,10 +92,10 @@ function createXhrHandlers (
       }
     }
 
-    let fileAfterChange: SettledFileInfo = Object.assign<
+    let fileAfterChange: UploadSettledFileInfo = Object.assign<
     Record<string, unknown>,
-    SettledFileInfo,
-    Partial<FileInfo>
+    UploadSettledFileInfo,
+    Partial<UploadFileInfo>
     >({}, file, {
       status: 'finished',
       percentage
@@ -108,7 +110,7 @@ function createXhrHandlers (
     handleXHRLoad,
     handleXHRError,
     handleXHRAbort (e) {
-      const fileAfterChange: SettledFileInfo = Object.assign({}, file, {
+      const fileAfterChange: UploadSettledFileInfo = Object.assign({}, file, {
         status: 'removed',
         file: null,
         percentage
@@ -118,7 +120,7 @@ function createXhrHandlers (
       doChange(fileAfterChange, e)
     },
     handleXHRProgress (e) {
-      const fileAfterChange: SettledFileInfo = Object.assign({}, file, {
+      const fileAfterChange: UploadSettledFileInfo = Object.assign({}, file, {
         status: 'uploading'
       })
 
@@ -138,7 +140,7 @@ function customSubmitImpl (options: {
   headers?: FuncOrRecordOrUndef
   action?: string
   withCredentials?: boolean
-  file: SettledFileInfo
+  file: UploadSettledFileInfo
   customRequest: CustomRequest
 }): void {
   const { inst, file, data, headers, withCredentials, action, customRequest } =
@@ -152,10 +154,10 @@ function customSubmitImpl (options: {
     withCredentials,
     action,
     onProgress (event) {
-      const fileAfterChange: SettledFileInfo = Object.assign<
+      const fileAfterChange: UploadSettledFileInfo = Object.assign<
       Record<string, unknown>,
-      SettledFileInfo,
-      Partial<FileInfo>
+      UploadSettledFileInfo,
+      Partial<UploadFileInfo>
       >({}, file, {
         status: 'uploading'
       })
@@ -165,10 +167,10 @@ function customSubmitImpl (options: {
       doChange(fileAfterChange)
     },
     onFinish () {
-      let fileAfterChange: SettledFileInfo = Object.assign<
+      let fileAfterChange: UploadSettledFileInfo = Object.assign<
       Record<string, unknown>,
-      SettledFileInfo,
-      Partial<FileInfo>
+      UploadSettledFileInfo,
+      Partial<UploadFileInfo>
       >({}, file, {
         status: 'finished',
         percentage
@@ -179,10 +181,10 @@ function customSubmitImpl (options: {
       doChange(fileAfterChange)
     },
     onError () {
-      let fileAfterChange: SettledFileInfo = Object.assign<
+      let fileAfterChange: UploadSettledFileInfo = Object.assign<
       Record<string, unknown>,
-      SettledFileInfo,
-      Partial<FileInfo>
+      UploadSettledFileInfo,
+      Partial<UploadFileInfo>
       >({}, file, {
         status: 'error',
         percentage
@@ -197,7 +199,7 @@ function customSubmitImpl (options: {
 
 function registerHandler (
   inst: UploadInternalInst,
-  file: SettledFileInfo,
+  file: UploadSettledFileInfo,
   request: XMLHttpRequest
 ): void {
   const handlers = createXhrHandlers(inst, file, request)
@@ -211,7 +213,7 @@ function registerHandler (
 
 function unwrapFunctionValue<T> (
   data: FuncOrRecordOrUndef<T>,
-  file: SettledFileInfo
+  file: UploadSettledFileInfo
 ): Record<string, T> {
   if (typeof data === 'function') {
     return data({ file })
@@ -223,7 +225,7 @@ function unwrapFunctionValue<T> (
 function setHeaders (
   request: XMLHttpRequest,
   headers: FuncOrRecordOrUndef,
-  file: SettledFileInfo
+  file: UploadSettledFileInfo
 ): void {
   const headersObject = unwrapFunctionValue(headers, file)
   if (!headersObject) return
@@ -235,7 +237,7 @@ function setHeaders (
 function appendData (
   formData: FormData,
   data: FuncOrRecordOrUndef<string | Blob>,
-  file: SettledFileInfo
+  file: UploadSettledFileInfo
 ): void {
   const dataObject = unwrapFunctionValue(data, file)
   if (!dataObject) return
@@ -247,7 +249,7 @@ function appendData (
 function submitImpl (
   inst: UploadInternalInst,
   fieldName: string,
-  file: SettledFileInfo,
+  file: UploadSettledFileInfo,
   {
     method,
     action,
@@ -270,7 +272,9 @@ function submitImpl (
   request.withCredentials = withCredentials
   const formData = new FormData()
   appendData(formData, data, file)
-  formData.append(fieldName, file.file as File)
+  if (file.file !== null) {
+    formData.append(fieldName, file.file)
+  }
   registerHandler(inst, file, request)
   if (action !== undefined) {
     request.open(method.toUpperCase(), action)
@@ -314,26 +318,27 @@ export const uploadProps = {
     type: Boolean as PropType<boolean | undefined>,
     default: undefined
   },
-  onChange: Function as PropType<OnChange>,
-  onRemove: Function as PropType<OnRemove>,
-  onFinish: Function as PropType<OnFinish>,
+  onChange: Function as PropType<UploadOnChange>,
+  onRemove: Function as PropType<UploadOnRemove>,
+  onFinish: Function as PropType<UploadOnFinish>,
   onError: Function as PropType<OnError>,
   onBeforeUpload: Function as PropType<OnBeforeUpload>,
   isErrorState: Function as PropType<(xhr: XMLHttpRequest) => boolean>,
   /** currently not used */
-  onDownload: Function as PropType<OnDownload>,
+  onDownload: Function as PropType<UploadOnDownload>,
   defaultUpload: {
     type: Boolean,
     default: true
   },
-  fileList: Array as PropType<FileInfo[]>,
+  fileList: Array as PropType<UploadFileInfo[]>,
   'onUpdate:fileList': [Function, Array] as PropType<
   MaybeArray<OnUpdateFileList>
   >,
   onUpdateFileList: [Function, Array] as PropType<MaybeArray<OnUpdateFileList>>,
+  fileListClass: String,
   fileListStyle: [String, Object] as PropType<string | CSSProperties>,
   defaultFileList: {
-    type: Array as PropType<FileInfo[]>,
+    type: Array as PropType<UploadFileInfo[]>,
     default: () => []
   },
   showCancelButton: {
@@ -360,7 +365,7 @@ export const uploadProps = {
   onPreview: Function as PropType<OnPreview>,
   shouldUseThumbnailUrl: {
     type: Function as PropType<ShouldUseThumbnailUrl>,
-    default: (file: SettledFileInfo) => {
+    default: (file: UploadSettledFileInfo) => {
       if (!environmentSupportFile) return false
       return isImageFile(file)
     }
@@ -374,6 +379,7 @@ export const uploadProps = {
   },
   imageGroupProps: Object as PropType<ImageGroupProps>,
   inputProps: Object as PropType<InputHTMLAttributes>,
+  triggerClass: String,
   triggerStyle: [String, Object] as PropType<CSSProperties | string>,
   renderIcon: Function as PropType<RenderIcon>
 } as const
@@ -440,7 +446,7 @@ export default defineComponent({
       // May have bug! set to null?
       target.value = ''
     }
-    function doUpdateFileList (files: SettledFileInfo[]): void {
+    function doUpdateFileList (files: UploadSettledFileInfo[]): void {
       const { 'onUpdate:fileList': _onUpdateFileList, onUpdateFileList } = props
       if (_onUpdateFileList) call(_onUpdateFileList, files)
       if (onUpdateFileList) call(onUpdateFileList, files)
@@ -475,7 +481,7 @@ export default defineComponent({
 
       void Promise.all(
         fileAndEntries.map(async ({ file, entry }) => {
-          const fileInfo: SettledFileInfo = {
+          const fileInfo: UploadSettledFileInfo = {
             id: createId(),
             batchId,
             name: file.name,
@@ -504,6 +510,7 @@ export default defineComponent({
           let nextTickChain = Promise.resolve()
 
           fileInfos.forEach((fileInfo) => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
             nextTickChain = nextTickChain.then(nextTick as any).then(() => {
               fileInfo &&
                 doChange(fileInfo, e, {
@@ -610,7 +617,7 @@ export default defineComponent({
       }
     }
     function getFileThumbnailUrlResolver (
-      file: SettledFileInfo
+      file: UploadSettledFileInfo
     ): Promise<string> | string {
       if (file.thumbnailUrl) return file.thumbnailUrl
       const { createThumbnailUrl } = props
@@ -677,6 +684,7 @@ export default defineComponent({
       onRemoveRef: toRef(props, 'onRemove'),
       onDownloadRef: toRef(props, 'onDownload'),
       mergedFileListRef,
+      triggerClassRef: toRef(props, 'triggerClass'),
       triggerStyleRef: toRef(props, 'triggerStyle'),
       shouldUseThumbnailUrlRef: toRef(props, 'shouldUseThumbnailUrl'),
       renderIconRef: toRef(props, 'renderIcon'),
@@ -693,6 +701,7 @@ export default defineComponent({
       handleFileAddition,
       mergedDisabledRef: formItem.mergedDisabledRef,
       maxReachedRef,
+      fileListClassRef: toRef(props, 'fileListClass'),
       fileListStyleRef: toRef(props, 'fileListStyle'),
       abstractRef: toRef(props, 'abstract'),
       acceptRef: toRef(props, 'accept'),
@@ -771,7 +780,7 @@ export default defineComponent({
           this.dragOver && `${mergedClsPrefix}-upload--drag-over`,
           this.themeClass
         ]}
-        style={this.cssVars as any}
+        style={this.cssVars}
       >
         {inputNode}
         {this.showTrigger && this.listType !== 'image-card' && (

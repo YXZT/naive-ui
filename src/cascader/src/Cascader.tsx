@@ -12,7 +12,8 @@ import {
   watchEffect,
   type VNodeChild,
   type HTMLAttributes,
-  nextTick
+  nextTick,
+  type VNode
 } from 'vue'
 import {
   createTreeMate,
@@ -67,6 +68,7 @@ import type {
 } from './interface'
 import { cascaderInjectionKey } from './interface'
 import style from './styles/index.cssr'
+import { type PopoverProps } from '../../popover'
 
 export const cascaderProps = {
   ...(useTheme.props as ThemeProps<CascaderTheme>),
@@ -131,6 +133,7 @@ export const cascaderProps = {
     default: undefined
   },
   maxTagCount: [String, Number] as PropType<number | 'responsive'>,
+  ellipsisTagPopoverProps: Object as PropType<PopoverProps>,
   menuProps: Object as PropType<HTMLAttributes>,
   filterMenuProps: Object as PropType<HTMLAttributes>,
   virtualScroll: {
@@ -167,6 +170,23 @@ export const cascaderProps = {
   >,
   onBlur: Function as PropType<(e: FocusEvent) => void>,
   onFocus: Function as PropType<(e: FocusEvent) => void>,
+  getColumnStyle: Function as PropType<
+  (detail: { level: number }) => string | CSSProperties
+  >,
+  renderPrefix: Function as PropType<
+  (props: {
+    option: CascaderOption
+    checked: boolean
+    node: VNode | null
+  }) => VNodeChild
+  >,
+  renderSuffix: Function as PropType<
+  (props: {
+    option: CascaderOption
+    checked: boolean
+    node: VNode | null
+  }) => VNodeChild
+  >,
   // deprecated
   onChange: [Function, Array] as PropType<MaybeArray<OnUpdateValue> | undefined>
 } as const
@@ -376,7 +396,7 @@ export default defineComponent({
               const tmNode = getNode(key)
               if (tmNode !== null) {
                 cascaderMenuInstRef.value.showErrorMessage(
-                  (tmNode.rawNode as any)[props.labelField]
+                  (tmNode.rawNode as any)[props.labelField] as string
                 )
               }
             }
@@ -871,6 +891,9 @@ export default defineComponent({
       localeRef,
       labelFieldRef: toRef(props, 'labelField'),
       renderLabelRef: toRef(props, 'renderLabel'),
+      getColumnStyleRef: toRef(props, 'getColumnStyle'),
+      renderPrefixRef: toRef(props, 'renderPrefix'),
+      renderSuffixRef: toRef(props, 'renderSuffix'),
       syncCascaderMenuPosition,
       syncSelectMenuPosition,
       updateKeyboardKey,
@@ -1022,6 +1045,7 @@ export default defineComponent({
                       status={this.mergedStatus}
                       clsPrefix={mergedClsPrefix}
                       maxTagCount={this.maxTagCount}
+                      ellipsisTagPopoverProps={this.ellipsisTagPopoverProps}
                       bordered={this.mergedBordered}
                       size={this.mergedSize}
                       theme={this.mergedTheme.peers.InternalSelection}

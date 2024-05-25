@@ -64,7 +64,7 @@ export default defineComponent({
           <NTimePicker
             size={this.timePickerSize}
             placeholder={this.locale.selectTime}
-            format={this.timeFormat}
+            format={this.timerPickerFormat}
             {...(Array.isArray(timePickerProps) ? undefined : timePickerProps)}
             showIcon={false}
             to={false}
@@ -138,7 +138,12 @@ export default defineComponent({
                     [`${mergedClsPrefix}-date-panel-date--excluded`]:
                       !dateItem.inCurrentMonth,
                     [`${mergedClsPrefix}-date-panel-date--disabled`]:
-                      this.mergedIsDateDisabled(dateItem.ts)
+                      this.mergedIsDateDisabled(dateItem.ts, {
+                        type: 'date',
+                        year: dateItem.dateObject.year,
+                        month: dateItem.dateObject.month,
+                        date: dateItem.dateObject.date
+                      })
                   }
                 ]}
                 onClick={() => {

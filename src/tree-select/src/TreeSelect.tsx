@@ -28,7 +28,9 @@ import type { FormValidationStatus } from '../../form/src/interface'
 import {
   type Key,
   type InternalTreeInst,
-  type TreeOption
+  type TreeOption,
+  type TreeOverrideNodeClickBehaviorReturn,
+  type GetChildren
 } from '../../tree/src/interface'
 import type { SelectBaseOption, SelectOption } from '../../select/src/interface'
 import { createTreeMateOptions, treeSharedProps } from '../../tree/src/Tree'
@@ -80,6 +82,7 @@ import {
 } from './utils'
 import style from './styles/index.cssr'
 import { useMergedCheckStrategy } from '../../tree/src/utils'
+import { type PopoverProps } from '../../popover'
 
 type OnLoad = (node: TreeSelectOption) => Promise<void>
 
@@ -149,11 +152,16 @@ export const treeSelectProps = {
   },
   status: String as PropType<FormValidationStatus>,
   renderTag: Function as PropType<TreeSelectRenderTag>,
+  ellipsisTagPopoverProps: Object as PropType<PopoverProps>,
   ...treeSharedProps,
   renderLabel: Function as PropType<TreeSelectRenderLabel>,
   renderPrefix: Function as PropType<TreeSelectRenderPrefix>,
   renderSuffix: Function as PropType<TreeSelectRenderSuffix>,
   nodeProps: Function as PropType<TreeSelectNodeProps>,
+  watchProps: Array as PropType<
+  Array<'defaultCheckedKeys' | 'defaultSelectedKeys' | 'defaultExpandedKeys'>
+  >,
+  getChildren: Function as PropType<GetChildren>,
   onBlur: Function as PropType<(e: FocusEvent) => void>,
   onFocus: Function as PropType<(e: FocusEvent) => void>,
   onLoad: Function as PropType<OnLoad>,
@@ -219,7 +227,7 @@ export default defineComponent({
       const { labelField } = props
       return (pattern: string, node: TreeSelectOption): boolean => {
         if (!pattern.length) return true
-        return ((node as any)[labelField] as string)
+        return (node[labelField] as string)
           .toLowerCase()
           .includes(pattern.toLowerCase())
       }
@@ -612,19 +620,31 @@ export default defineComponent({
       const { value } = e.target as unknown as HTMLInputElement
       patternRef.value = value
     }
-    function treeHandleKeydown (e: KeyboardEvent): void {
+    function treeHandleKeydown (e: KeyboardEvent): {
+      enterBehavior: TreeOverrideNodeClickBehaviorReturn | null
+    } {
       const { value: treeInst } = treeInstRef
       if (treeInst) {
-        treeInst.handleKeydown(e)
+        return treeInst.handleKeydown(e)
+      }
+      return {
+        enterBehavior: null
       }
     }
     function handleKeydown (e: KeyboardEvent): void {
       if (e.key === 'Enter') {
         if (mergedShowRef.value) {
-          treeHandleKeydown(e)
+          const { enterBehavior } = treeHandleKeydown(e)
           if (!props.multiple) {
-            closeMenu()
-            focusSelection()
+            switch (enterBehavior) {
+              case 'default':
+              case 'toggleSelect':
+                closeMenu()
+                focusSelection()
+                break
+              default:
+                break
+            }
           }
         } else {
           openMenu()
@@ -838,6 +858,7 @@ export default defineComponent({
                       themeOverrides={
                         mergedTheme.peerOverrides.InternalSelection
                       }
+                      ellipsisTagPopoverProps={this.ellipsisTagPopoverProps}
                       renderTag={this.selectionRenderTag}
                       selectedOption={this.selectedOption}
                       selectedOptions={this.selectedOptions}
@@ -924,6 +945,7 @@ export default defineComponent({
                                 showIrrelevantNodes={false}
                                 animated={false}
                                 pattern={this.pattern}
+                                getChildren={this.getChildren}
                                 filter={this.mergedFilter}
                                 data={options}
                                 cancelable={multiple}
@@ -948,8 +970,12 @@ export default defineComponent({
                                 renderSuffix={this.renderSuffix}
                                 renderSwitcherIcon={this.renderSwitcherIcon}
                                 nodeProps={this.nodeProps}
+                                watchProps={this.watchProps}
                                 virtualScroll={
                                   this.consistentMenuWidth && this.virtualScroll
+                                }
+                                overrideDefaultNodeClickBehavior={
+                                  this.overrideDefaultNodeClickBehavior
                                 }
                                 internalTreeSelect
                                 internalUnifySelectCheck

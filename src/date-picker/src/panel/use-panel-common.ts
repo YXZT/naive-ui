@@ -22,7 +22,7 @@ const TIME_FORMAT = 'HH:mm:ss'
 const usePanelCommonProps = {
   active: Boolean,
   dateFormat: String,
-  timeFormat: {
+  timerPickerFormat: {
     type: String,
     value: TIME_FORMAT
   },
@@ -42,7 +42,11 @@ const usePanelCommonProps = {
   },
   themeClass: String,
   onRender: Function as PropType<(() => void) | undefined>,
-  panel: Boolean
+  panel: Boolean,
+  onNextMonth: Function as PropType<() => void>,
+  onPrevMonth: Function as PropType<() => void>,
+  onNextYear: Function as PropType<() => void>,
+  onPrevYear: Function as PropType<() => void>
 } as const
 
 type UsePanelCommonProps = ExtractPropTypes<typeof usePanelCommonProps>

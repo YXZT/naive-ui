@@ -14,14 +14,14 @@ import type { PropType, CSSProperties, VNode, HTMLAttributes } from 'vue'
 import { on, off } from 'evtd'
 import { VResizeObserver } from 'vueuc'
 import { useIsIos } from 'vooks'
-import { getPreciseEventTarget } from 'seemly'
+import { depx, getPreciseEventTarget } from 'seemly'
 import { useConfig, useTheme, useThemeClass, useRtl } from '../../../_mixins'
 import type { ThemeProps } from '../../../_mixins'
 import type {
   ExtractInternalPropTypes,
   ExtractPublicPropTypes
 } from '../../../_utils'
-import { useReactivated, Wrapper } from '../../../_utils'
+import { rtlInset, useReactivated, Wrapper } from '../../../_utils'
 import { scrollbarLight } from '../styles'
 import type { ScrollbarTheme } from '../styles'
 import style from './styles/index.cssr'
@@ -75,10 +75,6 @@ export interface ScrollbarInst extends ScrollbarInstMethods {
 
 const scrollbarProps = {
   ...(useTheme.props as ThemeProps<ScrollbarTheme>),
-  size: {
-    type: Number,
-    default: 5
-  },
   duration: {
     type: Number,
     default: 0
@@ -99,7 +95,7 @@ const scrollbarProps = {
   content: Function as PropType<() => HTMLElement | null | undefined>,
   containerClass: String,
   containerStyle: [String, Object] as PropType<string | CSSProperties>,
-  contentClass: String,
+  contentClass: [String, Array] as PropType<string | Array<string | undefined>>,
   contentStyle: [String, Object] as PropType<string | CSSProperties>,
   horizontalRailStyle: [String, Object] as PropType<string | CSSProperties>,
   verticalRailStyle: [String, Object] as PropType<string | CSSProperties>,
@@ -155,6 +151,15 @@ const Scrollbar = defineComponent({
     let memoMouseY: number = 0
     const isIos = useIsIos()
 
+    const themeRef = useTheme(
+      'Scrollbar',
+      '-scrollbar',
+      style,
+      scrollbarLight,
+      props,
+      mergedClsPrefixRef
+    )
+
     const yBarSizeRef = computed(() => {
       const { value: containerHeight } = containerHeightRef
       const { value: contentHeight } = contentHeightRef
@@ -168,7 +173,8 @@ const Scrollbar = defineComponent({
       } else {
         return Math.min(
           containerHeight,
-          (yRailSize * containerHeight) / contentHeight + props.size * 1.5
+          (yRailSize * containerHeight) / contentHeight +
+            depx(themeRef.value.self.width) * 1.5
         )
       }
     })
@@ -186,7 +192,10 @@ const Scrollbar = defineComponent({
       ) {
         return 0
       } else {
-        return (xRailSize * containerWidth) / contentWidth + props.size * 1.5
+        return (
+          (xRailSize * containerWidth) / contentWidth +
+          depx(themeRef.value.self.height) * 1.5
+        )
       }
     })
     const xBarSizePxRef = computed(() => {
@@ -311,7 +320,7 @@ const Scrollbar = defineComponent({
     ): void => {
       if (!props.scrollable) return
       if (typeof options === 'number') {
-        scrollToPosition(y ?? 0, options, 0, false, 'auto')
+        scrollToPosition(options, y ?? 0, 0, false, 'auto')
         return
       }
       const {
@@ -636,31 +645,32 @@ const Scrollbar = defineComponent({
       off('mousemove', window, handleYScrollMouseMove, true)
       off('mouseup', window, handleYScrollMouseUp, true)
     })
-    const themeRef = useTheme(
-      'Scrollbar',
-      '-scrollbar',
-      style,
-      scrollbarLight,
-      props,
-      mergedClsPrefixRef
-    )
     const cssVarsRef = computed(() => {
       const {
-        common: {
-          cubicBezierEaseInOut,
-          scrollbarBorderRadius,
-          scrollbarHeight,
-          scrollbarWidth
-        },
-        self: { color, colorHover }
+        common: { cubicBezierEaseInOut },
+        self: {
+          color,
+          colorHover,
+          height,
+          width,
+          borderRadius,
+          railInsetHorizontal,
+          railInsetVertical,
+          railColor
+        }
       } = themeRef.value
       return {
         '--n-scrollbar-bezier': cubicBezierEaseInOut,
         '--n-scrollbar-color': color,
         '--n-scrollbar-color-hover': colorHover,
-        '--n-scrollbar-border-radius': scrollbarBorderRadius,
-        '--n-scrollbar-width': scrollbarWidth,
-        '--n-scrollbar-height': scrollbarHeight
+        '--n-scrollbar-border-radius': borderRadius,
+        '--n-scrollbar-width': width,
+        '--n-scrollbar-height': height,
+        '--n-scrollbar-rail-inset-horizontal': railInsetHorizontal,
+        '--n-scrollbar-rail-inset-vertical': rtlEnabledRef?.value
+          ? rtlInset(railInsetVertical)
+          : railInsetVertical,
+        '--n-scrollbar-rail-color': railColor
       }
     })
     const themeClassHandle = inlineThemeDisabled
@@ -713,19 +723,24 @@ const Scrollbar = defineComponent({
     } = this
     if (!this.scrollable) return $slots.default?.()
     const triggerIsNone = this.trigger === 'none'
-    const createYRail = (style: CSSProperties | undefined): VNode => {
+    const createYRail = (
+      className: string | undefined,
+      style: CSSProperties | undefined
+    ): VNode => {
       return (
         <div
           ref="yRailRef"
           class={[
             `${mergedClsPrefix}-scrollbar-rail`,
-            `${mergedClsPrefix}-scrollbar-rail--vertical`
+            `${mergedClsPrefix}-scrollbar-rail--vertical`,
+            className
           ]}
           data-scrollbar-rail
           style={[style || '', this.verticalRailStyle as CSSProperties]}
-          aria-hiddens
+          aria-hidden
         >
           {h(
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
             (triggerIsNone ? Wrapper : Transition) as any,
             triggerIsNone ? null : { name: 'fade-in-transition' },
             {
@@ -806,7 +821,7 @@ const Scrollbar = defineComponent({
               </VResizeObserver>
             </div>
           ),
-          internalHoistYRail ? null : createYRail(undefined),
+          internalHoistYRail ? null : createYRail(undefined, undefined),
           this.xScrollable && (
             <div
               ref="xRailRef"
@@ -819,6 +834,7 @@ const Scrollbar = defineComponent({
               aria-hidden
             >
               {h(
+                // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
                 (triggerIsNone ? Wrapper : Transition) as any,
                 triggerIsNone ? null : { name: 'fade-in-transition' },
                 {
@@ -854,7 +870,7 @@ const Scrollbar = defineComponent({
       return (
         <Fragment>
           {scrollbarNode}
-          {createYRail(this.cssVars)}
+          {createYRail(this.themeClass, this.cssVars)}
         </Fragment>
       )
     } else {

@@ -127,7 +127,7 @@ export const inputProps = {
   renderCount: Function as PropType<(props: { value: string }) => VNodeChild>,
   onMousedown: Function as PropType<(e: MouseEvent) => void>,
   onKeydown: Function as PropType<(e: KeyboardEvent) => void>,
-  onKeyup: Function as PropType<(e: KeyboardEvent) => void>,
+  onKeyup: [Function, Array] as PropType<(e: KeyboardEvent) => void>,
   onInput: [Function, Array] as PropType<OnUpdateValue>,
   onFocus: [Function, Array] as PropType<MaybeArray<(e: FocusEvent) => void>>,
   onBlur: [Function, Array] as PropType<MaybeArray<(e: FocusEvent) => void>>,
@@ -373,23 +373,38 @@ export default defineComponent({
     // other methods
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
     const vm = getCurrentInstance()!.proxy!
-    function doUpdateValue (value: [string, string]): void
-    function doUpdateValue (value: string): void
-    function doUpdateValue (value: string | [string, string]): void {
+    function doUpdateValue (
+      value: [string, string],
+      meta: { source: 0 | 1 | 'clear' }
+    ): void
+    function doUpdateValue (
+      value: string,
+      meta: { source: 0 | 1 | 'clear' }
+    ): void
+    function doUpdateValue (
+      value: string | [string, string],
+      meta: { source: 0 | 1 | 'clear' }
+    ): void {
       const { onUpdateValue, 'onUpdate:value': _onUpdateValue, onInput } = props
       const { nTriggerFormInput } = formItem
-      if (onUpdateValue) call(onUpdateValue as OnUpdateValueImpl, value)
-      if (_onUpdateValue) call(_onUpdateValue as OnUpdateValueImpl, value)
-      if (onInput) call(onInput as OnUpdateValueImpl, value)
+      if (onUpdateValue) call(onUpdateValue as OnUpdateValueImpl, value, meta)
+      if (_onUpdateValue) call(_onUpdateValue as OnUpdateValueImpl, value, meta)
+      if (onInput) call(onInput as OnUpdateValueImpl, value, meta)
       uncontrolledValueRef.value = value
       nTriggerFormInput()
     }
-    function doChange (value: [string, string]): void
-    function doChange (value: string): void
-    function doChange (value: string | [string, string]): void {
+    function doChange (
+      value: [string, string],
+      meta: { source: 0 | 1 | 'clear' }
+    ): void
+    function doChange (value: string, meta: { source: 0 | 1 | 'clear' }): void
+    function doChange (
+      value: string | [string, string],
+      meta: { source: 0 | 1 | 'clear' }
+    ): void {
       const { onChange } = props
       const { nTriggerFormChange } = formItem
-      if (onChange) call(onChange as OnUpdateValueImpl, value)
+      if (onChange) call(onChange as OnUpdateValueImpl, value, meta)
       uncontrolledValueRef.value = value
       nTriggerFormChange()
     }
@@ -471,7 +486,9 @@ export default defineComponent({
       const isIncomingValueValid = allowInput(targetValue)
       if (isIncomingValueValid) {
         if (!props.pair) {
-          event === 'input' ? doUpdateValue(targetValue) : doChange(targetValue)
+          event === 'input'
+            ? doUpdateValue(targetValue, { source: index })
+            : doChange(targetValue, { source: index })
         } else {
           let { value } = mergedValueRef
           if (!Array.isArray(value)) {
@@ -480,7 +497,9 @@ export default defineComponent({
             value = [value[0], value[1]]
           }
           value[index] = targetValue
-          event === 'input' ? doUpdateValue(value) : doChange(value)
+          event === 'input'
+            ? doUpdateValue(value, { source: index })
+            : doChange(value, { source: index })
         }
       }
       // force update to sync input's view with value
@@ -587,12 +606,15 @@ export default defineComponent({
     }
     function handleClear (e: MouseEvent): void {
       doClear(e)
+      clearValue()
+    }
+    function clearValue (): void {
       if (props.pair) {
-        doUpdateValue(['', ''])
-        doChange(['', ''])
+        doUpdateValue(['', ''], { source: 'clear' })
+        doChange(['', ''], { source: 'clear' })
       } else {
-        doUpdateValue('')
-        doChange('')
+        doUpdateValue('', { source: 'clear' })
+        doChange('', { source: 'clear' })
       }
     }
     function handleMouseDown (e: MouseEvent): void {
@@ -658,8 +680,11 @@ export default defineComponent({
       }
       on('mouseup', document, hidePassword)
     }
+    function handleWrapperKeyup (e: KeyboardEvent): void {
+      if (props.onKeyup) call(props.onKeyup, e)
+    }
     function handleWrapperKeydown (e: KeyboardEvent): void {
-      props.onKeydown?.(e)
+      if (props.onKeydown) call(props.onKeydown, e)
       switch (e.key) {
         case 'Escape':
           handleWrapperKeydownEsc()
@@ -809,6 +834,7 @@ export default defineComponent({
       inputElRef,
       textareaElRef,
       isCompositing: isComposingRef,
+      clear: clearValue,
       focus,
       blur,
       select,
@@ -988,6 +1014,7 @@ export default defineComponent({
       handlePasswordToggleClick,
       handlePasswordToggleMousedown,
       handleWrapperKeydown,
+      handleWrapperKeyup,
       handleTextAreaMirrorResize,
       getTextareaScrollContainer: () => {
         return textareaElRef.value
@@ -1053,7 +1080,7 @@ export default defineComponent({
         onMouseleave={this.handleMouseLeave}
         onCompositionstart={this.handleCompositionStart}
         onCompositionend={this.handleCompositionEnd}
-        onKeyup={this.onKeyup}
+        onKeyup={this.handleWrapperKeyup}
         onKeydown={this.handleWrapperKeydown}
       >
         {/* textarea & basic input */}

@@ -222,6 +222,7 @@ describe('n-dropdown', () => {
     expect(triggerNodeWrapper.exists()).toBe(true)
     await triggerNodeWrapper.trigger('click')
 
+    // eslint-disable-next-line @typescript-eslint/non-nullable-type-assertion-style
     const disabledMenu = document.querySelector(
       '.n-dropdown-option-body--disabled'
     ) as HTMLDivElement
@@ -296,7 +297,6 @@ describe('n-dropdown', () => {
   })
 
   it('should accept empty object in type-checking phase', () => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const dropdown = <NDropdown options={[{}]} />
+    ;<NDropdown options={[{}]} />
   })
 })
