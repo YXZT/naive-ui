@@ -66,6 +66,7 @@ export default defineComponent({
       mergedTableLayoutRef,
       headerCheckboxDisabledRef,
       onUnstableColumnResize,
+      onTableColumnDragEnd,
       doUpdateResizableWidth,
       handleTableHeaderScroll,
       deriveNextSorter,
@@ -129,6 +130,27 @@ export default defineComponent({
       )
       doUpdateResizableWidth(column, limitWidth)
     }
+    function handleDragEnd (
+      column: TableBaseColumn,
+      displacementX: number
+    ): void {
+      const startWidth = resizeStartWidthMap.get(column.key)
+      if (startWidth === undefined) {
+        return
+      }
+      const widthAfterResize = startWidth + displacementX
+      const limitWidth = clampValueFollowCSSRules(
+        widthAfterResize,
+        column.minWidth,
+        column.maxWidth
+      )
+      onTableColumnDragEnd(
+        widthAfterResize,
+        limitWidth,
+        column,
+        getCellActualWidth
+      )
+    }
     return {
       cellElsRef,
       componentId,
@@ -150,7 +172,8 @@ export default defineComponent({
       handleColHeaderClick,
       handleTableHeaderScroll,
       handleColumnResizeStart,
-      handleColumnResize
+      handleColumnResize,
+      handleDragEnd
     }
   },
   render () {
@@ -174,7 +197,8 @@ export default defineComponent({
       handleColHeaderClick,
       handleCheckboxUpdateChecked,
       handleColumnResizeStart,
-      handleColumnResize
+      handleColumnResize,
+      handleDragEnd
     } = this
     let hasEllipsis = false
     const theadVNode = (
@@ -254,6 +278,12 @@ export default defineComponent({
                           }}
                           onResize={(displacementX) => {
                             handleColumnResize(
+                              column as TableBaseColumn,
+                              displacementX
+                            )
+                          }}
+                          onResizeEnd={(displacementX) => {
+                            handleDragEnd(
                               column as TableBaseColumn,
                               displacementX
                             )

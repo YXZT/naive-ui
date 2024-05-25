@@ -365,7 +365,14 @@ export function useTableData (
       getColumnWidth
     )
   }
-
+  function onTableColumnDragEnd (
+    resizedWidth: number,
+    limitedWidth: number,
+    column: TableBaseColumn,
+    getColumnWidth: (key: ColumnKey) => number | undefined
+  ): void {
+    props.onUpdateDragEnd?.(resizedWidth, limitedWidth, column, getColumnWidth)
+  }
   function page (page: number): void {
     doUpdatePage(page)
   }
@@ -403,6 +410,7 @@ export function useTableData (
     doUpdatePageSize,
     doUpdatePage,
     onUnstableColumnResize,
+    onTableColumnDragEnd,
     // exported methods
     filter,
     filters,

@@ -47,6 +47,7 @@ declare module 'vue' {
     NElement: typeof import('naive-ui')['NElement']
     NEllipsis: typeof import('naive-ui')['NEllipsis']
     NEmpty: typeof import('naive-ui')['NEmpty']
+    NEquation: typeof import('naive-ui')['NEquation']
     NForm: typeof import('naive-ui')['NForm']
     NFormItem: typeof import('naive-ui')['NFormItem']
     NFormItemCol: typeof import('naive-ui')['NFormItemCol']
@@ -94,6 +95,7 @@ declare module 'vue' {
     NP: typeof import('naive-ui')['NP']
     NPageHeader: typeof import('naive-ui')['NPageHeader']
     NPagination: typeof import('naive-ui')['NPagination']
+    NPerformantEllipsis: typeof import('naive-ui')['NPerformantEllipsis']
     NPopconfirm: typeof import('naive-ui')['NPopconfirm']
     NPopover: typeof import('naive-ui')['NPopover']
     NPopselect: typeof import('naive-ui')['NPopselect']
@@ -140,8 +142,6 @@ declare module 'vue' {
     NUploadFileList: typeof import('naive-ui')['NUploadFileList']
     NUploadTrigger: typeof import('naive-ui')['NUploadTrigger']
     NWatermark: typeof import('naive-ui')['NWatermark']
-    NEquation: typeof import('naive-ui')['NEquation']
-    NPerformantEllipsis: typeof import('naive-ui')['NPerformantEllipsis']
   }
 }
 export {}

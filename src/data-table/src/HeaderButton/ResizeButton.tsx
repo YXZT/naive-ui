@@ -8,7 +8,7 @@ export default defineComponent({
   props: {
     onResizeStart: Function,
     onResize: Function as PropType<(displacementX: number) => void>,
-    onResizeEnd: Function
+    onResizeEnd: Function as PropType<(displacementX: number) => void>
   },
   setup (props) {
     // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
@@ -32,9 +32,9 @@ export default defineComponent({
     function handleMousemove (e: MouseEvent): void {
       props.onResize?.(getMouseX(e) - startX)
     }
-    function handleMouseup (): void {
+    function handleMouseup (e: MouseEvent): void {
       activeRef.value = false
-      props.onResizeEnd?.()
+      props.onResizeEnd?.(getMouseX(e) - startX)
       off('mousemove', window, handleMousemove)
       off('mouseup', window, handleMouseup)
     }

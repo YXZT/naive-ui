@@ -150,6 +150,7 @@ export const dataTableProps = {
   onUpdateExpandedRowKeys: [Function, Array] as PropType<
   MaybeArray<OnUpdateExpandedRowKeys>
   >,
+  onUpdateDragEnd: Function,
   onScroll: Function as PropType<(e: Event) => void>,
   // deprecated
   onPageChange: [Function, Array] as PropType<PaginationProps['onUpdate:page']>,
@@ -399,6 +400,12 @@ export interface DataTableInjection {
   doUpdateExpandedRowKeys: (keys: RowKey[]) => void
   doUpdateFilters: (filters: FilterState, sourceColumn: TableBaseColumn) => void
   onUnstableColumnResize: (
+    resizedWidth: number,
+    limitedWidth: number,
+    column: TableBaseColumn,
+    getColumnWidth: (key: ColumnKey) => number | undefined
+  ) => void
+  onTableColumnDragEnd: (
     resizedWidth: number,
     limitedWidth: number,
     column: TableBaseColumn,

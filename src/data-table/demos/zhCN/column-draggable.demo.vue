@@ -10,6 +10,7 @@
     :data="data"
     :pagination="pagination"
     :bordered="false"
+    :on-update-drag-end="changEvent"
   />
 </template>
 
@@ -75,6 +76,9 @@ const data: Song[] = [
 export default defineComponent({
   setup () {
     const message = useMessage()
+    const changEvent = (resizedWidth: number, limitedWidth: number, column: number) => {
+      console.log({ resizedWidth, limitedWidth, column })
+    }
     return {
       data,
       columns: createColumns({
@@ -82,7 +86,8 @@ export default defineComponent({
           message.info(`Play ${row.title}`)
         }
       }),
-      pagination: false as const
+      pagination: false as const,
+      changEvent
     }
   }
 })
